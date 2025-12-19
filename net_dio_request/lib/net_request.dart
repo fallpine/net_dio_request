@@ -67,6 +67,57 @@ class NetRequest {
     }
   }
 
+  Future<String?> getString(
+    String apiUrl, {
+    Map<String, dynamic>? parameters,
+    Map<String, dynamic>? headers,
+    bool isShowLoading = true,
+  }) async {
+    if (isShowLoading) {
+      QsToast.loading();
+    }
+    Map<String, dynamic> newHeaders = headers ?? {};
+
+    try {
+      final response = await dio.get(
+        apiUrl,
+        queryParameters: parameters,
+        options: net_request.Options(
+          headers: newHeaders,
+          responseType: net_request.ResponseType.json,
+        ),
+      );
+
+      if (isShowLoading) {
+        QsToast.dismiss();
+      }
+
+      if (response.statusCode == 200) {
+        if (response.data == null) {
+          return null;
+        } else if (response.data is String) {
+          return response.data as String;
+        } else {
+          throw NetRequestException(
+              code: NetRequestException.dataParseError, message: "数据解析失败");
+        }
+      } else {
+        throw NetRequestException(
+            code: response.statusCode, message: response.statusMessage ?? "");
+      }
+    } catch (e) {
+      if (isShowLoading) {
+        QsToast.dismiss();
+      }
+      // 如果已经是NetRequestException，直接抛出
+      if (e is NetRequestException) {
+        rethrow;
+      }
+      throw NetRequestException(
+          code: NetRequestException.dioError, message: "dio异常: $e");
+    }
+  }
+
   /// Post
   ///
   /// @throws NetRequestException 该方法会抛出异常，请使用try-catch捕获
